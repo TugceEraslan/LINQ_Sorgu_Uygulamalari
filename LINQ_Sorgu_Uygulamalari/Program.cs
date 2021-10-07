@@ -10,9 +10,32 @@ using System.Linq;
 namespace LINQ_Sorgu_Uygulamalari
 {
 
+    class CustomerDemo
+    {
+         public CustomerDemo()
+        {
+              Orders = new List<OrderDemo>();
+        }
+        public int CustomerId { get; set; }
+        public string Name { get; set; }
+        public int OrderCount { get; set; }
+        public List<OrderDemo> Orders { get; set; }
+    }
+
+    class OrderDemo
+    {
+        public int OrderId { get; set; }
+        public decimal Total { get; set; }
+        public List<ProductDemo> Products { get; set; }
+    }
+
+    class ProductDemo
+    {
+        public int ProductId { get; set; }
+        public string Name { get; set; }
+    }
     class Program
     {
-
         static void Main(string[] args)
         {
 
@@ -126,20 +149,68 @@ namespace LINQ_Sorgu_Uygulamalari
                 //    Console.WriteLine(item.ProductName +" ---->" + item.ListPrice);
                 //}
 
-                var minProduct = db.Products.Min(p => p.ListPrice);
-                var maxProduct = db.Products.Max(p => p.ListPrice);
+                //var minProduct = db.Products.Min(p => p.ListPrice);
+                //var maxProduct = db.Products.Max(p => p.ListPrice);
 
 
-                Console.WriteLine("Min : {0} , Max : {1} ", minProduct, maxProduct);
+                //Console.WriteLine("Min : {0} , Max : {1} ", minProduct, maxProduct);
 
-                var Productmin = db.Products.Where(t => t.ListPrice == (db.Products.Min(p => p.ListPrice))).FirstOrDefault();
+                //var Productmin = db.Products.Where(t => t.ListPrice == (db.Products.Min(p => p.ListPrice))).FirstOrDefault();
 
-                Console.WriteLine($"name: {Productmin.ProductName} , price: {Productmin.ListPrice}");
+                //Console.WriteLine($"name: {Productmin.ProductName} , price: {Productmin.ListPrice}");
 
 
-                var Productmax = db.Products.Where(t => t.ListPrice == (db.Products.Max(p => p.ListPrice))).FirstOrDefault();
+                //var Productmax = db.Products.Where(t => t.ListPrice == (db.Products.Max(p => p.ListPrice))).FirstOrDefault();
 
-                Console.WriteLine($"name: {Productmax.ProductName} , price: {Productmax.ListPrice}");
+                //Console.WriteLine($"name: {Productmax.ProductName} , price: {Productmax.ListPrice}");
+
+                // Siperiş sayısı 1 ve 1 den büyük olan müşterilere ulaşmak için
+
+                //var customers = db.Customers.Where(w => w.Orders.Count > 0).Select(s=> new { s.FirstName,s.LastName}).ToList();
+
+                //foreach (var item in customers)
+                //{
+                //    Console.WriteLine(item.FirstName + " " + item.LastName);
+                //}
+
+
+                var customers2 = db.Customers
+                    .Where(w => w.Orders.Any()) //  Any() metodu en az 1 kaydı olan verileri getirir. Yandaki gösterimle aynıdır. Where(w => w.Orders.Count > 0) . Eğer hiç sipariş kaydı olmayan müşterileri getir deseydim .Where(w => !w.Orders.Any())
+                    .Select(s =>
+                      new CustomerDemo
+                      {
+                          Name=s.FirstName +" " + s.LastName,
+                          CustomerId=s.Id,
+                          OrderCount=s.Orders.Count(),
+                          Orders=s.Orders.Select(a=> new OrderDemo {
+                             OrderId=a.Id,
+                             Total=(decimal)a.OrderDetails.Sum(od => od.Quantity * od.UnitPrice),
+                             Products=a.OrderDetails.Select(t=>new ProductDemo
+                             {
+                                 Name=t.Product.ProductName,
+                                 ProductId=(int)t.ProductId
+                               
+                             }).ToList()
+                          }).ToList()
+                      })
+                    .OrderBy(o=>o.OrderCount)
+                    .ToList();
+
+                foreach (var customer in customers2)
+                {
+                    Console.WriteLine($"Id: {customer.CustomerId} Name: {customer.Name} Count: {customer.OrderCount} ");
+
+                    foreach (var order in customer.Orders)
+                    {
+                        Console.WriteLine($"Order Id: {order.OrderId} Total: {order.Total}");
+
+                        foreach (var product in order.Products)
+                        {
+                            Console.WriteLine($"ProductId: {product.ProductId} ProductName: {product.Name}");
+                        }
+                    }
+                }
+
             }
 
         }
